@@ -5737,7 +5737,7 @@ find_field_in_table_ref(THD *thd, TABLE_LIST *table_list,
           TABLE *table= field_to_set->table;
           if (thd->mark_used_columns == MARK_COLUMNS_READ)
             bitmap_set_bit(table->read_set, field_to_set->field_index);
-          else
+          else if (thd->mark_used_columns == MARK_COLUMNS_WRITE)
             bitmap_set_bit(table->write_set, field_to_set->field_index);
         }
       }
