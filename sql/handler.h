@@ -1599,6 +1599,10 @@ struct handlerton
    @return transaction commit ID
    @retval 0 if no system-versioned data was affected by the transaction */
    ulonglong (*prepare_commit_versioned)(THD *thd, ulonglong *trx_id);
+
+  /* backup */
+  void (*prepare_for_backup)(void);
+  void (*end_backup)(void);
 };
 
 
