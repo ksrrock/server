@@ -556,14 +556,14 @@ public:
     Set flag indicating that we have already acquired metadata lock
     protecting this statement against GRL while opening tables.
   */
-  void set_has_protection_against_grl()
+  void set_has_protection_against_grl(enum_mdl_type mdl_type)
   {
-    m_has_protection_against_grl= TRUE;
+    m_has_protection_against_grl|= MDL_BIT(mdl_type);
   }
 
-  bool has_protection_against_grl() const
+  bool has_protection_against_grl(enum_mdl_type mdl_type) const
   {
-    return m_has_protection_against_grl;
+    return (bool) (m_has_protection_against_grl & MDL_BIT(mdl_type));
   }
 
 private:
@@ -595,7 +595,7 @@ private:
     Indicates that in the process of opening tables we have acquired
     protection against global read lock.
   */
-  bool m_has_protection_against_grl;
+  mdl_bitmap_t m_has_protection_against_grl;
 };
 
 

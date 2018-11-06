@@ -1258,7 +1258,15 @@ int ha_maria::open(const char *name, int mode, uint test_if_locked)
     int_table_flags|= HA_CAN_INSERT_DELAYED;
   }
   if (file->s->options & (HA_OPTION_CHECKSUM | HA_OPTION_COMPRESS_RECORD))
+  {
     int_table_flags |= HA_HAS_NEW_CHECKSUM;
+    /*
+      We can only do online backup on transactional tables with checksum.
+      Checksums are needed to avoid half writes.
+    */
+    if (file->s->base.born_transactional)
+      int_table_flags |= HA_CAN_ONLINE_BACKUPS;
+  }
 
   /*
     For static size rows, tell MariaDB that we will access all bytes

@@ -2044,8 +2044,8 @@ retry_share:
     tc_add_table(thd, table);
   }
 
-
-  if (!(flags & MYSQL_OPEN_HAS_MDL_LOCK))
+  if (!(flags & MYSQL_OPEN_HAS_MDL_LOCK) &&
+      table->s->table_category < TABLE_CATEGORY_INFORMATION)
   {
     /*
       We are not under LOCK TABLES and going to acquire write-lock/
@@ -2069,12 +2069,19 @@ retry_share:
             pre-acquiring metadata locks at the beggining of
             open_tables() call.
     */
+    enum enum_mdl_type mdl_type= MDL_BACKUP_DML;
+
+    if (table->s->table_category != TABLE_CATEGORY_LOG)
+      mdl_type= MDL_BACKUP_SYS_DML;
+    else if ((table->file->ha_table_flags() & HA_CAN_ONLINE_BACKUPS))
+      mdl_type= MDL_BACKUP_TRANS_DML;
+
     if (table_list->mdl_request.is_write_lock_request() &&
         ! (flags & (MYSQL_OPEN_IGNORE_GLOBAL_READ_LOCK |
                     MYSQL_OPEN_FORCE_SHARED_MDL |
                     MYSQL_OPEN_FORCE_SHARED_HIGH_PRIO_MDL |
                     MYSQL_OPEN_SKIP_SCOPED_MDL_LOCK)) &&
-        ! ot_ctx->has_protection_against_grl())
+        ! ot_ctx->has_protection_against_grl(mdl_type))
     {
       MDL_request protection_request;
       MDL_deadlock_handler mdl_deadlock_handler(ot_ctx);
@@ -2086,7 +2093,7 @@ retry_share:
         DBUG_RETURN(TRUE);
       }
 
-      protection_request.init(MDL_key::BACKUP, "", "", MDL_BACKUP_STMT,
+      protection_request.init(MDL_key::BACKUP, "", "", mdl_type,
                               MDL_STATEMENT);
 
       /*
@@ -2105,7 +2112,7 @@ retry_share:
         DBUG_RETURN(TRUE);
       }
 
-      ot_ctx->set_has_protection_against_grl();
+      ot_ctx->set_has_protection_against_grl(mdl_type);
     }
   }
 
@@ -2983,7 +2990,7 @@ Open_table_context::Open_table_context(THD *thd, uint flags)
    m_flags(flags),
    m_action(OT_NO_ACTION),
    m_has_locks(thd->mdl_context.has_locks()),
-   m_has_protection_against_grl(FALSE)
+   m_has_protection_against_grl(0)
 {}
 
 
@@ -3199,7 +3206,7 @@ Open_table_context::recover_from_failed_open()
     against GRL. It is no longer valid as the corresponding lock was
     released by close_tables_for_reopen().
   */
-  m_has_protection_against_grl= FALSE;
+  m_has_protection_against_grl= 0;
   /* Prepare for possible another back-off. */
   m_action= OT_NO_ACTION;
   return result;

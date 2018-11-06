@@ -28,6 +28,10 @@ class MDL_lock;
 class MDL_ticket;
 bool  ok_for_lower_case_names(const char *name);
 
+typedef unsigned short mdl_bitmap_t;
+#define MDL_BIT(A) static_cast<mdl_bitmap_t>(1U << A)
+
+
 /**
   @def ENTER_COND(C, M, S, O)
   Start a wait on a condition.
@@ -246,30 +250,37 @@ enum enum_mdl_type {
 
 
 /** Backup locks */
+#define MDL_BACKUP_STAGE1 enum_mdl_type(0)
+#define MDL_BACKUP_STAGE2 enum_mdl_type(1)
+#define MDL_BACKUP_STAGE3 enum_mdl_type(2)
+#define MDL_BACKUP_STAGE4 enum_mdl_type(3)
 
 /**
   Blocks (or is blocked by) statements that intend to modify data. Acquired
   before commit lock by FLUSH TABLES WITH READ LOCK.
 */
-#define MDL_BACKUP_FTWRL1 enum_mdl_type(0)
+#define MDL_BACKUP_FTWRL1 enum_mdl_type(4)
 
 /**
   Blocks (or is blocked by) commits. Acquired after global read lock by
   FLUSH TABLES WITH READ LOCK.
 */
-#define MDL_BACKUP_FTWRL2 enum_mdl_type(1)
+#define MDL_BACKUP_FTWRL2 enum_mdl_type(5)
+
+#define MDL_BACKUP_DML enum_mdl_type(6)
+#define MDL_BACKUP_TRANS_DML enum_mdl_type(7)
+#define MDL_BACKUP_SYS_DML enum_mdl_type(8)
 
 /**
   Must be acquired by statements that intend to modify data.
 */
-#define MDL_BACKUP_STMT enum_mdl_type(2)
+#define MDL_BACKUP_STMT enum_mdl_type(9)
 
 /**
   Must be acquired during commit.
 */
-#define MDL_BACKUP_COMMIT enum_mdl_type(3)
-#define MDL_BACKUP_END enum_mdl_type(4)
-
+#define MDL_BACKUP_COMMIT enum_mdl_type(10)
+#define MDL_BACKUP_END enum_mdl_type(11)
 
 
 /** Duration of metadata lock. */

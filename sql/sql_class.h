@@ -1949,7 +1949,7 @@ public:
       m_mdl_global_read_lock(NULL)
   {}
 
-  bool lock_global_read_lock(THD *thd);
+  bool lock_global_read_lock(THD *thd, bool all_tables);
   void unlock_global_read_lock(THD *thd);
   /**
     Check if this connection can acquire protection against GRL and

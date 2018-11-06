@@ -1011,17 +1011,20 @@ bool lock_object_name(THD *thd, MDL_key::enum_mdl_namespace mdl_type,
 /**
   Take global read lock, wait if there is protection against lock.
 
-  If the global read lock is already taken by this thread, then nothing is done.
+  If the global read lock is already taken by this thread, then nothing is
+  done.
 
   See also "Handling of global read locks" above.
 
-  @param thd     Reference to thread.
+  @param thd         Reference to thread.
+  @param all_tables  TRUE if both trans and non trans tables should be blocked.
+                     FALSE if we should only block NON TRANS tables
 
   @retval False  Success, global read lock set, commits are NOT blocked.
   @retval True   Failure, thread was killed.
 */
 
-bool Global_read_lock::lock_global_read_lock(THD *thd)
+bool Global_read_lock::lock_global_read_lock(THD *thd, bool all_tables)
 {
   DBUG_ENTER("lock_global_read_lock");
 
@@ -1033,7 +1036,9 @@ bool Global_read_lock::lock_global_read_lock(THD *thd)
                                                  MDL_BACKUP_FTWRL1));
     DBUG_ASSERT(! thd->mdl_context.is_lock_owner(MDL_key::BACKUP, "", "",
                                                  MDL_BACKUP_FTWRL2));
-    mdl_request.init(MDL_key::BACKUP, "", "", MDL_BACKUP_FTWRL1, MDL_EXPLICIT);
+    mdl_request.init(MDL_key::BACKUP, "", "",
+                     all_tables ? MDL_BACKUP_FTWRL1 : MDL_BACKUP_STAGE3,
+                     MDL_EXPLICIT);
 
     if (thd->mdl_context.acquire_lock(&mdl_request,
                                       thd->variables.lock_wait_timeout))
