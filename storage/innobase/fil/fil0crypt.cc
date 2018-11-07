@@ -1064,7 +1064,9 @@ fil_crypt_start_encrypting_space(
 	* crypt data in page 0 */
 
 	/* 1 - create crypt data */
-	crypt_data = fil_space_create_crypt_data(FIL_ENCRYPTION_DEFAULT, FIL_DEFAULT_ENCRYPTION_KEY);
+	crypt_data = fil_space_create_crypt_data(FIL_ENCRYPTION_DEFAULT,
+		srv_default_encryption_key_id != FIL_DEFAULT_ENCRYPTION_KEY
+		? srv_default_encryption_key_id : FIL_DEFAULT_ENCRYPTION_KEY);
 
 	if (crypt_data == NULL) {
 		mutex_exit(&fil_crypt_threads_mutex);

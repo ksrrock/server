@@ -3,7 +3,7 @@
 Copyright (c) 1995, 2017, Oracle and/or its affiliates. All Rights Reserved.
 Copyright (c) 2008, 2009 Google Inc.
 Copyright (c) 2009, Percona Inc.
-Copyright (c) 2013, 2017, MariaDB Corporation.
+Copyright (c) 2013, 2018, MariaDB Corporation.
 
 Portions of this file contain modifications contributed and copyrighted by
 Google, Inc. Those modifications are gratefully acknowledged and are described
@@ -253,6 +253,9 @@ UNIV_INTERN uint	srv_flush_log_at_timeout = 1;
 UNIV_INTERN ulong	srv_page_size		= UNIV_PAGE_SIZE_DEF;
 UNIV_INTERN ulong	srv_page_size_shift	= UNIV_PAGE_SIZE_SHIFT_DEF;
 UNIV_INTERN char	srv_use_global_flush_log_at_trx_commit	= TRUE;
+
+/* Default encryption key_id */
+UNIV_INTERN uint	srv_default_encryption_key_id = FIL_DEFAULT_ENCRYPTION_KEY;
 
 /* Try to flush dirty pages so as to avoid IO bursts at
 the checkpoints. */

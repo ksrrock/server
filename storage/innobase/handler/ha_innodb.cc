@@ -685,9 +685,71 @@ static int mysql_tmpfile_path(const char *path, const char *prefix)
 static void innodb_remember_check_sysvar_funcs();
 mysql_var_check_func check_sysvar_enum;
 
+/** Update the system variable srv_default_encryption_key_id using
+the "saved" value. This function is registered as a callback with MySQL.
+@param[in,out]	thd	thread handle
+@param[in]	var	pointer to system variable
+@param[out]	save	immediate result for update
+@param[in]	value	incoming string
+*/
+static
+void
+innodb_default_encryption_key_id_update(
+	THD*				thd,
+	struct st_mysql_sys_var*	var,
+	void*				var_ptr,
+	const void*			save)
+{
+	*reinterpret_cast<uint*>(var_ptr)
+		=  srv_default_encryption_key_id
+		= (*static_cast<const uint*>(save));
+}
+
+/** Validate passed-in "value" is a valid encryption key_id
+found from encryption plugin.
+This function is registered as a callback with MySQL.
+@param[in,out]	thd	thread handle
+@param[in]	var	pointer to system variable
+@param[out]	save	immediate result for validate
+@param[in]	value	incoming string
+@return 0 for valid key_id */
+static
+int
+innodb_default_encryption_key_id_validate(
+	THD*				thd,
+	struct st_mysql_sys_var*	var,
+	void*				save,
+	struct st_mysql_value*		value)
+{
+	long long key_id_buf;
+	uint key_id;
+
+	if (value->val_int(value, &key_id_buf)) {
+		/* The value is NULL. That is invalid. */
+		return(1);
+	}
+
+	*reinterpret_cast<uint*>(save) = key_id = static_cast<uint>(key_id_buf);
+
+	/* Default encryption key_id must be found from encryption
+	plugin keys. */
+	if (key_id != FIL_DEFAULT_ENCRYPTION_KEY
+	    && !encryption_key_id_exists(key_id)) {
+		push_warning_printf(
+			thd, Sql_condition::WARN_LEVEL_WARN,
+			ER_WRONG_ARGUMENTS,
+			"InnoDB: innodb_default_encryption_key_id=%u not available in encryption plugin",
+			key_id);
+		return (1);
+	}
+
+	return(0);
+}
+
 static MYSQL_THDVAR_UINT(default_encryption_key_id, PLUGIN_VAR_RQCMDARG,
 			 "Default encryption key id used for table encryption.",
-			 NULL, NULL,
+			 innodb_default_encryption_key_id_validate,
+			 innodb_default_encryption_key_id_update,
 			 FIL_DEFAULT_ENCRYPTION_KEY, 1, UINT_MAX32, 0);
 
 /**
@@ -11947,8 +12009,8 @@ ha_innobase::check_table_options(
 	}
 
 	/* Ignore nondefault key_id if encryption is set off */
-	if (encrypt == FIL_ENCRYPTION_OFF &&
-		options->encryption_key_id != THDVAR(thd, default_encryption_key_id)) {
+	if (encrypt == FIL_ENCRYPTION_OFF
+	    && options->encryption_key_id != FIL_DEFAULT_ENCRYPTION_KEY) {
 		push_warning_printf(
 			thd, Sql_condition::WARN_LEVEL_WARN,
 			HA_WRONG_CREATE_OPTION,
